@@ -311,11 +311,14 @@ def run_pipeline(cfg: PipelineConfig) -> None:
     image_files = sorted([p for p in cfg.image_dir.iterdir() if p.suffix.lower() in {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}])
     kept_bg = 0
     total_bg = 0
+    n_processed = 0
+    n_skipped_no_mask = 0
 
     for img_path in image_files:
         stem = img_path.stem
         mask_path = cfg.mask_dir / f"{stem}.png"
         if not mask_path.exists():
+            n_skipped_no_mask += 1
             continue
         image = read_image(img_path)
         mask = read_mask(mask_path)
@@ -373,6 +376,25 @@ def run_pipeline(cfg: PipelineConfig) -> None:
                 ),
                 encoding="utf-8",
             )
+
+        n_processed += 1
+
+    if n_processed == 0:
+        print(
+            "[pipeline] 未生成任何 patch：mask-dir 下需要与图像**同名**的 **.png** 语义掩膜（每像素=类别 id）。\n"
+            f"  扫描图像目录: {cfg.image_dir.resolve()}（共 {len(image_files)} 张）\n"
+            f"  掩膜目录: {cfg.mask_dir.resolve()}\n"
+            "  若只有 YOLO 的 .txt，不能直接作 mask-dir；请先执行:\n"
+            "    python scripts/yolo_labels_to_semantic_masks.py "
+            f"--images-dir {cfg.image_dir} --labels-dir <你的labels> --output-dir <生成png的目录>\n"
+            "  再将 pipeline 的 --mask-dir 指向该目录。",
+            file=sys.stderr,
+        )
+    else:
+        print(
+            f"[pipeline] 完成：处理原图 {n_processed} 张，跳过（无同名 mask.png）{n_skipped_no_mask} 张；输出 {cfg.output_dir.resolve()}",
+            file=sys.stderr,
+        )
 
 
 def parse_args() -> PipelineConfig:
