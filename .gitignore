@@ -1,0 +1,19 @@
+# Hugging Face 教师权重（体积大勿提交）
+solution/weights/dinov3-vitb16-pretrain-lvd1689m/
+
+# 数据集（用网盘/scp 同步，勿进 Git）
+solution/datasets/
+
+# Python 缓存（不应提交）
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+
+# 训练输出与本地权重（大文件勿提交；若确需提交某个小文件可用 git add -f）
+runs/
+*.pt
