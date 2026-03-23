@@ -20,15 +20,12 @@ python scripts/download_dinov3_teacher.py
 
 文件：`pipeline.py`
 
-实现内容：
+实现内容（**仅滑动窗口**，已无 ROI 分支）：
 - 原图级等比例缩放（长边约束）
-- 大场景滑动窗口切片（`1024x1024`，可配置步长）
-- 小目标 ROI 规则：
-  - 长宽比截断（`r_max`）
-  - 最小边长约束（`s_min`）
-  - 极小目标固定方形 ROI（`s_hole`）
-- ROI 同步缩放 + padding 到固定输入（默认 `1024x1024`）
-- 图像/掩膜同步变换，掩膜使用最近邻插值
+- 固定窗口切片（默认 `1024×1024`，可改 `patch_size` / `window_stride`）
+- 越界窗口对称 padding（图像 `edge`、mask 背景常数）
+- 几乎全背景的窗口按 `keep_background_ratio` 抽样保留
+- 图像双线性、掩膜最近邻（仅出现在原图缩放一步）
 
 ### 运行示例
 
@@ -39,11 +36,7 @@ python pipeline.py ^
   --output-dir "data/processed" ^
   --max-long-edge 3000 ^
   --patch-size 1024 ^
-  --window-stride 800 ^
-  --target-input-size 1024 ^
-  --r-max 5 ^
-  --s-min 128 ^
-  --s-hole 192
+  --window-stride 800
 ```
 
 输出结构：
@@ -80,7 +73,7 @@ python pipeline.py ^
 - `dataset_det_from_masks.py`：从 `pipeline` 生成的 `images/` + `masks/` 在线提取连通域框，生成 YOLO 检测标签。
 - `detect_nwd_distill_loss.py`：在保留 **分类 BCE** 与 **DFL** 的前提下，将框回归 **CIoU 换为 NWD**，并加入多尺度 **特征蒸馏**；总损失为 ``λ_cls·L_cls + λ_loc·L_NWD + λ_feat·L_feat + λ_dfl·L_dfl``。
 
-**与实验方案输入尺寸一致**：学生 YOLO 输入固定为 **1024×1024**（`--imgsz`，默认 1024），与 pipeline 默认 `target-input-size` 一致；若磁盘上 patch 尺寸不同会双线性缩放到该边长（框为归一化坐标）。**教师 ViT 支路**默认也使用 **1024×1024**（`--teacher-img-size` 默认 1024），用于教师特征提取。
+**与实验方案输入尺寸一致**：学生 YOLO 输入固定为 **1024×1024**（`--imgsz`，默认 1024），与 pipeline 默认 `patch-size` 一致；若磁盘上 patch 尺寸不同会双线性缩放到该边长（框为归一化坐标）。**教师 ViT 支路**默认也使用 **1024×1024**（`--teacher-img-size` 默认 1024），用于教师特征提取。
 
 训练命令示例（需要你的检测权重与 `--num-yolo-classes` 匹配）：
 

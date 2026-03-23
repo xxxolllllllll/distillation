@@ -7,7 +7,7 @@
 | 你想做的事 | 去哪里 |
 |------------|--------|
 | 弄清每个文件干什么、先读什么 | **[solution/文件说明.md](solution/文件说明.md)** ⭐ |
-| 数据切片与 ROI | `solution/pipeline.py` |
+| 数据滑窗切片 | `solution/pipeline.py` |
 | YOLO 检测 + NWD + 蒸馏 | `solution/train_detect_distill.py` |
 | YOLO 分割 + 可选蒸馏 | `solution/train.py` |
 | 下载 DINOv3 教师到本地 | `solution/scripts/` 下两个脚本 |
