@@ -64,7 +64,7 @@ def load_yolo_seg_student(weights: str, nc: int, device: torch.device):
     会用「同名 yaml」重建网络再 load 权重（形状对得上的层会拷贝，检测/分割头可能对不齐而随机初始化）。
     """
     from ultralytics import YOLO
-    from ultralytics.nn.tasks import SegmentationModel
+    from ultralytics.nn.tasks import SegmentationModel, torch_safe_load
     from ultralytics.utils import DEFAULT_CFG
 
     wpath = Path(weights)
@@ -72,9 +72,12 @@ def load_yolo_seg_student(weights: str, nc: int, device: torch.device):
     student = yo.model
     head = student.model[-1]
     if getattr(head, "nc", nc) != nc:
+        # 与 COCO 等预训练类数不一致时：用 yolo11m-seg.pt → yolo11m-seg.yaml（会解析到 yolo11-seg + scale m）
         cfg_name = wpath.stem + ".yaml"
         student = SegmentationModel(cfg_name, ch=3, nc=nc, verbose=False)
-        student.load(str(wpath))
+        # 新版 ultralytics：BaseModel.load 只接受「checkpoint 字典（含 model）」或 nn.Module，不能传路径字符串
+        ckpt, _ = torch_safe_load(str(wpath))
+        student.load(ckpt)
 
     # v8SegmentationLoss 会读 model.args 里的 box/cls/dfl、overlap_mask 等
     student.args = deepcopy(DEFAULT_CFG)
